@@ -1,5 +1,5 @@
 from datetime import datetime
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify
 import json
 import platform
 import subprocess
@@ -20,8 +20,15 @@ def root():
         message=message
     )
 
+@app.route('/api/get_status', methods=['GET'])
+def api_get_status():
+    status = get_status()
+    status['server'] = {'time':datetime.now().strftime('%H:%M')}
+    return jsonify(status)
+
+
 def get_battery_mode(power):
-    if power > 0:
+    if power < 0:
         return 'Charging'
     else:
         return 'Discharging'
@@ -33,11 +40,14 @@ def get_grid_mode(power):
         return 'Importing'
 
 def correct_load(data):
-    return data['p_pv1_w'] - (data['p_grid_w'] + data['p_battery_w'])
+    if data['p_load_w'] == 0:
+        return data['p_pv1_w'] - (data['p_grid_w'] + data['p_battery_w'])
+    else:
+        return data['p_load_w']
 
 def get_status():
     if platform.system() == 'Linux':
-        proc = subprocess.Popen(['givlocally', 'read', '--output', 'json'], stdout=subprocess.PIPE)
+        proc = subprocess.Popen(['/home/pi/givlocally/venv/bin/givlocally', 'read', '--output', 'json'], stdout=subprocess.PIPE)
         data = proc.stdout.read().decode('utf-8')
         data = json.loads(data)
     else:
@@ -50,6 +60,7 @@ def get_status():
         'battery':{'power':round(data['p_battery_w'] / 1000, 2), 'charge':data['battery_soc_pct'], 'mode':get_battery_mode(data['p_battery_w'])},
         'inverter':{'time':datetime.strptime(data['system_time'], '%Y-%m-%d %H:%M:%S').strftime('%H:%M')}
     }
+
 
 def load_json(filename):
     with open(filename, 'r', encoding='utf-8') as f:

@@ -278,7 +278,7 @@
     <div class="icon" style="opacity: 0">☰</div>
     <div class="status">
       <span class="dot"></span>
-      Last update {{ server['time'] }}
+      <span id="last_update">Last updated {{ server['time'] }}</span>
     </div>
     <div class="icon" style="opacity: 0">⚙</div>
   </header>
@@ -292,9 +292,9 @@
   <div class="diagram">
 
     <div class="node solar">
-      <h2>{{ status['solar']['power'] }} kW</h2>
+      <h2 id="solar_power">{{ status['solar']['power'] }} kW</h2>
       <p>Solar Production</p>
-      <div class="circle">
+      <div class="circle" id="solar_icon">
       	{% if status['solar']['power'] < 0.05 %}
       		🌖
       	{% else %}
@@ -305,7 +305,6 @@
       		{% endif %}
       	{% endif %}
       
-      
 	  </div>
     </div>
 
@@ -315,20 +314,20 @@
 
     <div class="node usage">
       <div class="circle">🔌</div>
-      <h2>{{ status['load']['power'] }} kW</h2>
+      <h2 id="load_power">{{ status['load']['power'] }} kW</h2>
       <p>Home Usage</p>
     </div>
 
     <div class="node grid">
       <div class="circle">⚡</div>
-      <h2>{{ status['grid']['power'] }} kW</h2>
-      <p>Grid <span class="{{ status['grid']['mode'] }}">{{ status['grid']['mode'] }}</span></p>
+      <h2 id="grid_power">{{ status['grid']['power'] }} kW</h2>
+      <p>Grid <span id="grid_mode" class="{{ status['grid']['mode'] }}">{{ status['grid']['mode'] }}</span></p>
     </div>
 
     <div class="node battery">
       <div class="circle">🔋</div>
-      <h2>{{ status['battery']['power'] }} kW</h2>
-      <p>Battery <span class="{{ status['battery']['mode'] }}">{{ status['battery']['mode'] }}</span></p>
+      <h2 id="battery_power">{{ status['battery']['power'] }} kW</h2>
+      <p>Battery <span id="battery_mode" class="{{ status['battery']['mode'] }}">{{ status['battery']['mode'] }}</span></p>
     </div>
 
     <div class="line vertical top"></div>
@@ -341,22 +340,85 @@
   <div class="card">
     <div class="card-top">
       <span>STATE OF CHARGE</span>
-      <span>{{ status['battery']['charge'] }}%</span>
+      <span id="battery_charge">{{ status['battery']['charge'] }}%</span>
     </div>
 
     <div class="bar">
-      <div class="fill" style="width: {{ status['battery']['charge'] }}%"></div>
+      <div id="battery_charge_bar" class="fill" style="width: {{ status['battery']['charge'] }}%"></div>
     </div>
 
   </div>
 
   <nav>
-    <div><span>Server time</span><br>{{ server['time'] }}</div>
-    <div><form method="POST"><input type="hidden" name="sync" value="1"><button>➜</button></form></div>
-    <div><span>Inverter time</span><br>{{ status['inverter']['time'] }}</div>
+    <div>
+    	<span>Server time</span>
+    	<br><span id="server_time">{{ server['time'] }}</span>
+    </div>
+    <div>
+    	<form method="POST">
+    		<input type="hidden" name="sync" value="1">
+    		<button>➜</button>
+    	</form>
+    </div>
+    <div>
+    	<span>Inverter time</span>
+    	<br><span id="inverter_time">{{ status['inverter']['time'] }}</span>
+    </div>
   </nav>
 
 </div>
 
 </body>
+<script>
+		setInterval(get_status, 60000);
+
+		function get_status() {
+	        var xmlhttp = new XMLHttpRequest();
+	        xmlhttp.onreadystatechange = function() {
+	            if (xmlhttp.readyState == XMLHttpRequest.DONE) { 
+	                if (xmlhttp.status == 200) {
+	                    var response = xmlhttp.responseText;
+	                    response = JSON.parse(response);
+	                    
+	                    let last_update = document.querySelector('#last_update').innerHTML = "Last updated " + response['server']['time'];
+
+	                    let solar_power = document.querySelector('#solar_power').innerHTML = response['solar']['power'] + " kW";
+
+	                    let solar_icon = document.querySelector('#solar_icon');
+	                    if (response['solar']['power'] >= 1) {
+	                    	solar_icon.innerHTML = '☀';
+	                    } else {
+	                    	if (response['solar']['power'] > 0.05) {
+	                    		solar_icon.innerHTML = '⛅';
+	                    	} else {
+	                    		solar_icon.innerHTML = '🌖';
+	                    	}
+	                    }
+
+	                    let load_power = document.querySelector('#load_power').innerHTML = response['load']['power'] + " kW";
+
+	                    let grid_power = document.querySelector('#grid_power').innerHTML = response['grid']['power'] + " kW";
+
+	                    let grid_mode = document.querySelector('#grid_mode');
+	                    grid_mode.innerHTML = response['grid']['mode'];
+	                    grid_mode.className = response['grid']['mode'];
+
+	                    let battery_power = document.querySelector('#battery_power').innerHTML = response['battery']['power'] + " kW";
+
+	                    let battery_mode = document.querySelector('#battery_mode');
+	                    battery_mode.innerHTML = response['battery']['mode'];
+	                    battery_mode.className = response['battery']['mode'];
+
+	                    let battery_charge = document.querySelector('#battery_charge').innerHTML = response['battery']['charge'] + "%";
+
+	                    let battery_charge_bar = document.querySelector('#battery_charge_bar').style.width = response['battery']['charge'] + "%"; 
+
+	                }
+	            }
+	        };
+	
+	        xmlhttp.open("GET", "/api/get_status", true);
+	        xmlhttp.send();
+	    }
+</script>
 </html>
