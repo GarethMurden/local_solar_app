@@ -380,7 +380,7 @@
 	                    var response = xmlhttp.responseText;
 	                    response = JSON.parse(response);
 	                    
-	                    let last_update = document.querySelector('#last_update').innerHTML = "Last updated " + response['server']['time'];
+	                    let last_update = document.querySelector('#last_update').innerHTML = "Last updated " + response['server']['time'].split(' ')[1];
 
 	                    let solar_power = document.querySelector('#solar_power').innerHTML = response['solar']['power'] + " kW";
 
@@ -412,6 +412,10 @@
 	                    let battery_charge = document.querySelector('#battery_charge').innerHTML = response['battery']['charge'] + "%";
 
 	                    let battery_charge_bar = document.querySelector('#battery_charge_bar').style.width = response['battery']['charge'] + "%"; 
+
+	                    let server_time = document.querySelector('#server_time').innerHTML =response['server']['time'].split(' ')[1];
+
+	                    let inverter_time = document.querySelector('#inverter_time').innerHTML = response['inverter']['time'].split(' ')[1];
 
 	                }
 	            }
